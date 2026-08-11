@@ -15,7 +15,7 @@ from src.schemas.churn import TrainingConfigChurn
 def make_synthetic_churn_dataframe(n_per_class: int = 40) -> pd.DataFrame:
     """Синтетический датасет с обоими классами churn."""
     rows: list[dict] = []
-    regions = ["Europe", "America", "Asia"]
+    regions = ["europe", "america", "asia", "africa"]
     devices = ["mobile", "desktop", "tablet"]
     payments = ["card", "paypal", "crypto"]
 
@@ -125,7 +125,7 @@ def sample_client_payload() -> dict:
         "support_requests": 4,
         "account_age_months": 6,
         "failed_payments": 2,
-        "region": "Europe",
+        "region": "europe",
         "device_type": "mobile",
         "payment_method": "card",
         "autopay_enabled": 0,

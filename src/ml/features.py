@@ -1,5 +1,9 @@
 """Константы признаков churn-модели."""
 
+from __future__ import annotations
+
+from typing import Literal
+
 NUMERIC_FEATURES = [
     "monthly_fee",
     "usage_hours",
@@ -14,6 +18,20 @@ CATEGORICAL_FEATURES = [
     "device_type",
     "payment_method",
 ]
+
+ALLOWED_REGIONS = ("africa", "america", "asia", "europe")
+ALLOWED_DEVICE_TYPES = ("desktop", "mobile", "tablet")
+ALLOWED_PAYMENT_METHODS = ("card", "crypto", "paypal")
+
+ALLOWED_CATEGORICAL_VALUES: dict[str, tuple[str, ...]] = {
+    "region": ALLOWED_REGIONS,
+    "device_type": ALLOWED_DEVICE_TYPES,
+    "payment_method": ALLOWED_PAYMENT_METHODS,
+}
+
+Region = Literal["africa", "america", "asia", "europe"]
+DeviceType = Literal["desktop", "mobile", "tablet"]
+PaymentMethod = Literal["card", "crypto", "paypal"]
 
 FEATURE_TYPES = {
     "monthly_fee": "float",

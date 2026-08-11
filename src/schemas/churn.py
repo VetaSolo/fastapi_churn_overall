@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from src.ml.features import DeviceType, PaymentMethod, Region
 
 
 class ErrorResponse(BaseModel):
@@ -31,10 +33,17 @@ class FeatureVectorChurn(BaseModel):
     support_requests: int
     account_age_months: int
     failed_payments: int
-    region: str
-    device_type: str
-    payment_method: str
+    region: Region
+    device_type: DeviceType
+    payment_method: PaymentMethod
     autopay_enabled: int = Field(..., ge=0, le=1)
+
+    @field_validator("region", "device_type", "payment_method", mode="before")
+    @classmethod
+    def normalize_categorical(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.strip().lower()
+        return value
 
 
 class DatasetRowChurn(FeatureVectorChurn):

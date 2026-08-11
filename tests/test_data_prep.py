@@ -1,5 +1,7 @@
 """Unit-тесты подготовки данных (без FastAPI)."""
 
+from pathlib import Path
+
 import pandas as pd
 import pytest
 
@@ -113,3 +115,55 @@ def test_prepare_churn_data_is_reproducible(synthetic_dataframe):
 def test_get_class_distribution():
     target = pd.Series([0, 0, 1, 1, 1])
     assert get_class_distribution(target) == {"0": 2, "1": 3}
+
+
+def test_dataset_imputes_missing_values(tmp_path: Path, synthetic_dataframe):
+    dataframe = synthetic_dataframe.copy()
+    dataframe.loc[0, "support_requests"] = None
+    dataframe.loc[1, "region"] = None
+    dataframe.loc[2, "device_type"] = ""
+    dataframe.loc[3, "payment_method"] = "NAN"
+    dataframe.loc[4, "monthly_fee"] = None
+
+    path = tmp_path / "churn_with_na.csv"
+    dataframe.to_csv(path, index=False)
+
+    dataset = ChurnDataset(path)
+
+    assert dataset.dataframe["support_requests"].isna().sum() == 0
+    assert dataset.dataframe["region"].isna().sum() == 0
+    assert dataset.dataframe["device_type"].isna().sum() == 0
+    assert dataset.dataframe["payment_method"].isna().sum() == 0
+    assert dataset.dataframe["monthly_fee"].isna().sum() == 0
+    assert set(dataset.dataframe["region"].unique()).issubset(
+        {"africa", "america", "asia", "europe"}
+    )
+
+
+def test_dataset_rejects_invalid_category(tmp_path: Path, synthetic_dataframe):
+    dataframe = synthetic_dataframe.copy()
+    dataframe.loc[0, "region"] = "atlantis"
+    path = tmp_path / "churn_invalid.csv"
+    dataframe.to_csv(path, index=False)
+
+    with pytest.raises(DataPreparationError):
+        ChurnDataset(path)
+
+
+def test_feature_vector_normalizes_case():
+    from src.schemas.churn import FeatureVectorChurn
+
+    client = FeatureVectorChurn(
+        monthly_fee=10.0,
+        usage_hours=5.0,
+        support_requests=1,
+        account_age_months=3,
+        failed_payments=0,
+        region="Europe",
+        device_type="Mobile",
+        payment_method="Card",
+        autopay_enabled=1,
+    )
+    assert client.region == "europe"
+    assert client.device_type == "mobile"
+    assert client.payment_method == "card"

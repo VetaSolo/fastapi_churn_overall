@@ -18,6 +18,7 @@ from src.ml.data_prep import (
     split_churn_data,
 )
 from src.ml.features import (
+    ALLOWED_CATEGORICAL_VALUES,
     CATEGORICAL_FEATURES,
     FEATURE_COLUMNS,
     FEATURE_TYPES,
@@ -106,7 +107,7 @@ def predict(
                         "support_requests": 4,
                         "account_age_months": 6,
                         "failed_payments": 2,
-                        "region": "Europe",
+                        "region": "europe",
                         "device_type": "mobile",
                         "payment_method": "card",
                         "autopay_enabled": 0,
@@ -121,7 +122,7 @@ def predict(
                             "support_requests": 0,
                             "account_age_months": 36,
                             "failed_payments": 0,
-                            "region": "Europe",
+                            "region": "europe",
                             "device_type": "desktop",
                             "payment_method": "card",
                             "autopay_enabled": 1,
@@ -132,7 +133,7 @@ def predict(
                             "support_requests": 7,
                             "account_age_months": 2,
                             "failed_payments": 3,
-                            "region": "Europe",
+                            "region": "america",
                             "device_type": "mobile",
                             "payment_method": "card",
                             "autopay_enabled": 0,
@@ -296,6 +297,10 @@ def model_schema() -> dict:
         }
         if feature == "autopay_enabled":
             feature_info["allowed_values"] = [0, 1]
+        elif feature in ALLOWED_CATEGORICAL_VALUES:
+            feature_info["allowed_values"] = list(
+                ALLOWED_CATEGORICAL_VALUES[feature]
+            )
         features.append(feature_info)
 
     return {"target": TARGET_COLUMN, "features": features}

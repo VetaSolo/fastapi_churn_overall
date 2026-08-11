@@ -34,7 +34,7 @@ def test_predict_validation_error_returns_422(api_client):
             "support_requests": 1,
             "account_age_months": 3,
             "failed_payments": 0,
-            "region": "Europe",
+            "region": "europe",
             "device_type": "mobile",
             "payment_method": "card",
             "autopay_enabled": 1,
@@ -47,6 +47,37 @@ def test_predict_validation_error_returns_422(api_client):
     assert isinstance(body["details"], list)
     assert body["details"]
 
+
+def test_predict_invalid_region_returns_422(api_client, sample_client_payload):
+    api_client.post(
+        "/model/train",
+        json={
+            "model_type": "logreg",
+            "hyperparameters": {"random_state": 42},
+        },
+    )
+
+    payload = {**sample_client_payload, "region": "atlantis"}
+    response = api_client.post("/predict", json=payload)
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "VALIDATION_ERROR"
+
+
+def test_predict_normalizes_region_case(api_client, sample_client_payload):
+    api_client.post(
+        "/model/train",
+        json={
+            "model_type": "logreg",
+            "hyperparameters": {"random_state": 42},
+        },
+    )
+
+    payload = {**sample_client_payload, "region": "Europe"}
+    response = api_client.post("/predict", json=payload)
+
+    assert response.status_code == 200
+    assert response.json()["churn"] in (0, 1)
 
 def test_predict_missing_fields_returns_422(api_client):
     api_client.post(

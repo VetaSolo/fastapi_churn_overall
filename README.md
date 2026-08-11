@@ -41,9 +41,9 @@ CSV с заголовком. Каждая строка — один клиент
 | `support_requests` | int | Обращения в поддержку |
 | `account_age_months` | int | Возраст аккаунта в месяцах |
 | `failed_payments` | int | Неуспешные платежи |
-| `region` | str | Регион |
-| `device_type` | str | Тип устройства |
-| `payment_method` | str | Способ оплаты |
+| `region` | str | `africa`, `america`, `asia`, `europe` |
+| `device_type` | str | `desktop`, `mobile`, `tablet` |
+| `payment_method` | str | `card`, `crypto`, `paypal` |
 | `autopay_enabled` | int (`0`/`1`) | Автоплатёж |
 | `churn` | int (`0`/`1`) | Целевая метка оттока |
 
@@ -121,9 +121,11 @@ curl -X POST http://127.0.0.1:8000/model/train ^
 ```bash
 curl -X POST http://127.0.0.1:8000/predict ^
   -H "Content-Type: application/json" ^
-  -d "{\"monthly_fee\":79.99,\"usage_hours\":25.5,\"support_requests\":4,\"account_age_months\":6,\"failed_payments\":2,\"region\":\"Europe\",\"device_type\":\"mobile\",\"payment_method\":\"card\",\"autopay_enabled\":0}"
+  -d "{\"monthly_fee\":79.99,\"usage_hours\":25.5,\"support_requests\":4,\"account_age_months\":6,\"failed_payments\":2,\"region\":\"europe\",\"device_type\":\"mobile\",\"payment_method\":\"card\",\"autopay_enabled\":0}"
 ```
 
+Категории приводятся к lower-case (`Europe` → `europe`). Неизвестные значения (`atlantis` и т.п.) отклоняются с `422`.
+Пропуски в тренировочном CSV заполняются при загрузке: median для числовых, most_frequent для категориальных; строки без `churn` удаляются.
 Пример ответа:
 
 ```json

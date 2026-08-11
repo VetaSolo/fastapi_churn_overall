@@ -13,6 +13,9 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from src.core.exceptions import ModelTrainingError, PredictionError
 from src.ml.features import (
+    ALLOWED_DEVICE_TYPES,
+    ALLOWED_PAYMENT_METHODS,
+    ALLOWED_REGIONS,
     CATEGORICAL_FEATURES,
     FEATURE_COLUMNS,
     NUMERIC_FEATURES,
@@ -61,7 +64,17 @@ def build_churn_preprocessor() -> ColumnTransformer:
     categorical_pipeline = Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="most_frequent")),
-            ("encoder", OneHotEncoder(handle_unknown="ignore")),
+            (
+                "encoder",
+                OneHotEncoder(
+                    categories=[
+                        list(ALLOWED_REGIONS),
+                        list(ALLOWED_DEVICE_TYPES),
+                        list(ALLOWED_PAYMENT_METHODS),
+                    ],
+                    handle_unknown="error",
+                ),
+            ),
         ]
     )
     return ColumnTransformer(
