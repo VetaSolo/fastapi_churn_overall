@@ -117,7 +117,10 @@ def test_get_class_distribution():
     assert get_class_distribution(target) == {"0": 2, "1": 3}
 
 
-def test_dataset_imputes_missing_values(tmp_path: Path, synthetic_dataframe):
+def test_dataset_preserves_missing_values_for_pipeline(
+    tmp_path: Path,
+    synthetic_dataframe,
+):
     dataframe = synthetic_dataframe.copy()
     dataframe.loc[0, "support_requests"] = None
     dataframe.loc[1, "region"] = None
@@ -130,14 +133,47 @@ def test_dataset_imputes_missing_values(tmp_path: Path, synthetic_dataframe):
 
     dataset = ChurnDataset(path)
 
-    assert dataset.dataframe["support_requests"].isna().sum() == 0
-    assert dataset.dataframe["region"].isna().sum() == 0
-    assert dataset.dataframe["device_type"].isna().sum() == 0
-    assert dataset.dataframe["payment_method"].isna().sum() == 0
-    assert dataset.dataframe["monthly_fee"].isna().sum() == 0
-    assert set(dataset.dataframe["region"].unique()).issubset(
-        {"africa", "america", "asia", "europe"}
+    assert pd.isna(dataset.dataframe.loc[0, "support_requests"])
+    assert pd.isna(dataset.dataframe.loc[1, "region"])
+    assert pd.isna(dataset.dataframe.loc[2, "device_type"])
+    assert pd.isna(dataset.dataframe.loc[3, "payment_method"])
+    assert pd.isna(dataset.dataframe.loc[4, "monthly_fee"])
+
+
+def test_prepare_churn_data_imputes_using_train_only(synthetic_dataframe):
+    dataframe = synthetic_dataframe.copy().reset_index(drop=True)
+    dataframe.loc[0, "monthly_fee"] = None
+
+    X_train, X_test, y_train, y_test = prepare_churn_data(
+        dataframe,
+        test_size=0.2,
+        random_state=42,
     )
+
+    assert X_train["monthly_fee"].isna().sum() == 0
+    assert X_test["monthly_fee"].isna().sum() == 0
+    assert len(X_train) == len(y_train)
+    assert len(X_test) == len(y_test)
+
+
+def test_split_rejects_singleton_minority_class(synthetic_dataframe):
+    majority = synthetic_dataframe[synthetic_dataframe[TARGET_COLUMN] == 0].head(20)
+    minority = synthetic_dataframe[synthetic_dataframe[TARGET_COLUMN] == 1].head(1)
+    small = pd.concat([majority, minority], ignore_index=True)
+
+    with pytest.raises(DataPreparationError) as exc_info:
+        split_churn_data(small)
+
+    assert "minority" in exc_info.value.message.lower()
+    assert exc_info.value.details["min_class_count"] == 1
+
+
+def test_dataset_empty_csv_raises(tmp_path: Path):
+    path = tmp_path / "empty_churn.csv"
+    pd.DataFrame(columns=FEATURE_COLUMNS + [TARGET_COLUMN]).to_csv(path, index=False)
+
+    with pytest.raises(EmptyDatasetError):
+        ChurnDataset(path)
 
 
 def test_dataset_rejects_invalid_category(tmp_path: Path, synthetic_dataframe):

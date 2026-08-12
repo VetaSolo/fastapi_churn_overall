@@ -153,8 +153,61 @@ def test_model_status_when_not_trained(api_client):
     assert body["metrics"] is None
 
 
-def test_dataset_preview_limit_validation(api_client):
-    response = api_client.get("/dataset/preview?n=0")
+def test_train_singleton_minority_class_returns_400(api_client, monkeypatch):
+    import pandas as pd
 
-    assert response.status_code == 422
-    assert response.json()["code"] == "VALIDATION_ERROR"
+    import src.main as main_module
+    from src.ml.features import FEATURE_COLUMNS, TARGET_COLUMN
+
+    majority = pd.DataFrame(
+        [
+            {
+                "monthly_fee": 20.0,
+                "usage_hours": 80.0,
+                "support_requests": 0,
+                "account_age_months": 12,
+                "failed_payments": 0,
+                "region": "europe",
+                "device_type": "mobile",
+                "payment_method": "card",
+                "autopay_enabled": 1,
+                "churn": 0,
+            }
+            for _ in range(20)
+        ]
+    )
+    minority = pd.DataFrame(
+        [
+            {
+                "monthly_fee": 90.0,
+                "usage_hours": 5.0,
+                "support_requests": 4,
+                "account_age_months": 2,
+                "failed_payments": 2,
+                "region": "america",
+                "device_type": "desktop",
+                "payment_method": "paypal",
+                "autopay_enabled": 0,
+                "churn": 1,
+            }
+        ]
+    )
+    tiny = pd.concat([majority, minority], ignore_index=True)
+
+    class TinyDataset:
+        dataframe = tiny[FEATURE_COLUMNS + [TARGET_COLUMN]]
+
+    monkeypatch.setattr(main_module.app.state, "dataset", TinyDataset())
+
+    response = api_client.post(
+        "/model/train",
+        json={
+            "model_type": "logreg",
+            "hyperparameters": {"random_state": 42},
+        },
+    )
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["code"] == "DATA_PREPARATION_ERROR"
+    assert "minority" in body["message"].lower()

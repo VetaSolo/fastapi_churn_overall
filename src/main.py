@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from src.api.routes import router
 from src.core.config import DATASET_PATH, EMPTY_MODEL_METADATA
 from src.core.error_handlers import register_exception_handlers
-from src.core.exceptions import DataPreparationError
+from src.core.exceptions import ChurnServiceError
 from src.core.logging import setup_logging
 from src.ml.dataset import ChurnDataset
 from src.ml.persistence import load_churn_model
@@ -57,6 +57,6 @@ try:
         app.state.dataset.dataframe.shape[0],
         app.state.dataset.dataframe.shape[1],
     )
-except (FileNotFoundError, ValueError, DataPreparationError) as error:
+except (FileNotFoundError, ValueError, ChurnServiceError) as error:
     logger.error("Не удалось загрузить датасет: %s", error)
     app.state.dataset = None

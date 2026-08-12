@@ -7,13 +7,13 @@ from pathlib import Path
 import pandas as pd
 
 from src.core.exceptions import DataPreparationError
-from src.ml.data_prep import impute_missing_values
+from src.ml.data_prep import clean_raw_dataframe
 from src.ml.features import FEATURE_COLUMNS, TARGET_COLUMN
 from src.schemas.churn import DatasetRowChurn, FeatureVectorChurn
 
 
 class ChurnDataset:
-    """Загрузка, импутация пропусков и валидация тренировочного CSV."""
+    """Загрузка и валидация CSV без импутации (пропуски обрабатывает pipeline)."""
 
     def __init__(self, file_path: Path) -> None:
         self.file_path = file_path
@@ -35,7 +35,7 @@ class ChurnDataset:
                 details={"missing_columns": sorted(missing_columns)},
             )
 
-        dataframe = impute_missing_values(dataframe[list(required_columns)])
+        dataframe = clean_raw_dataframe(dataframe[list(required_columns)])
 
         validated_rows = [
             DatasetRowChurn.model_validate(row).model_dump()
